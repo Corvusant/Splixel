@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppvsdbg",
+            "request": "launch",
+            "name": "Debug",
+            "program": "${workspaceFolder}/zig-out/bin/ImageDiffer",
+            "args": [
+                "somePAth",
+                "anotherPath"
+            ],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "zig build"
+        },
+    ]
+}
