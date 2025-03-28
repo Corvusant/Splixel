@@ -7,8 +7,7 @@
             "name": "Debug",
             "program": "${workspaceFolder}/zig-out/bin/ImageDiffer",
             "args": [
-                "somePAth",
-                "anotherPath"
+                "C:/Projects/ImageDiffer/zig-out/bin/images"
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "zig build"
