@@ -25,11 +25,33 @@ pub fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) !s
 
         if (!IsValidFile(item.path))
             continue;
-        const path = try allocator.alloc(u8, item.path.len);
-        std.mem.copyForwards(u8, path, item.path);
-        try filePaths.append(path);
+
+        const pathName = try dir.realpathAlloc(allocator, "");
+        const fullImagePath = try std.fmt.allocPrint(allocator, "{s}\\{s}", .{ pathName, item.path });
+        try filePaths.append(fullImagePath);
     }
     return filePaths;
+}
+
+const Encoder = std.base64.standard.Encoder;
+pub fn ConvertImageToBas64(allocator: std.mem.Allocator, filepath: []const u8) ![]const u8 {
+    const path = filepath;
+    const file = try std.fs.openFileAbsolute(path, .{});
+    defer file.close();
+
+    const filesize = try file.getEndPos();
+
+    const filecontent = try file.readToEndAlloc(allocator, filesize);
+    const encodedLength = Encoder.calcSize(filesize);
+    const encodedFile = try allocator.alloc(u8, encodedLength);
+    return Encoder.encode(encodedFile, filecontent);
+}
+
+pub fn CreateHTMLPageWithImage(allocator: std.mem.Allocator, filePath: []const u8, encodedImage: []const u8) !void {
+    const path = filePath;
+    var file = try std.fs.cwd().createFile(path, .{});
+    const fileContent = try std.fmt.allocPrint(allocator, "<html><body><img src=\"data:image/png;base64, {s}\"></body></html>", .{encodedImage});
+    try file.writeAll(fileContent);
 }
 
 pub fn main() !void {
@@ -38,14 +60,25 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(gpa);
     defer std.process.argsFree(gpa, args);
 
+    var outputPath: []u8 = "";
+    var inputPath: []u8 = "";
     for (args, 0..) |arg, i| {
-        if (i == 0) continue; //ignore the path to our own executable
-        std.debug.print("{}: {s}\n", .{ i, arg });
-        const pngFiles = try FetchAllPNGFiles(gpa, arg);
-        defer pngFiles.deinit();
-        for (pngFiles.items) |file| {
-            std.debug.print(" File Found {s}", .{file});
+        if (i == 0) continue;
+        if (std.mem.eql(u8, arg, "-i") and args.len > i) {
+            inputPath = args[i + 1];
         }
+        if (std.mem.eql(u8, arg, "-o") and args.len > i) {
+            outputPath = args[i + 1];
+        } //ignore the path to our own executable
+        std.debug.print("{}: {s}\n", .{ i, arg });
+    }
+
+    const pngFiles = try FetchAllPNGFiles(gpa, inputPath);
+    defer pngFiles.deinit();
+    for (pngFiles.items) |file| {
+        std.debug.print(" File Found {s}", .{file});
+        const encodedImage = try ConvertImageToBas64(gpa, file);
+        try CreateHTMLPageWithImage(gpa, outputPath, encodedImage);
     }
 }
 

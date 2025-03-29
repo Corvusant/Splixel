@@ -7,7 +7,10 @@
             "name": "Debug",
             "program": "${workspaceFolder}/zig-out/bin/ImageDiffer",
             "args": [
-                "C:/Projects/ImageDiffer/zig-out/bin/images"
+                "-i",
+                "C:\\Projects\\ImageDiffer\\zig-out\\bin\\images",
+                "-o",
+                "C:\\Projects\\ImageDiffer\\zig-out\\bin\\Test.html"
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "zig build"
