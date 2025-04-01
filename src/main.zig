@@ -2,6 +2,100 @@
 //! you are building an executable. If you are making a library, the convention
 //! is to delete this file and start with root.zig instead.
 
+const std = @import("std");
+const OptionalFuncs = @import("optional");
+const Optional = @import("optional").Optional;
+const Tuple = @import("optional").Tuple;
+
+const InputImages = struct {
+    Image1: std.fs.File,
+    Image2: std.fs.File,
+};
+
+const InputFolder = struct {
+    Folder: []const u8,
+};
+
+const TemplateFile = struct {
+    TemplateFile: std.fs.File,
+};
+
+const OutputFile = struct {
+    File: []const u8,
+};
+
+const InputType = enum {
+    File,
+    Folder,
+};
+const InputUnion = union(InputType) { File: InputImages, Folder: InputFolder };
+
+pub fn TryOpenFileFromPath(path: []const u8) Optional(std.fs.File) {
+    const file = std.fs.openFileAbsolute(path, .{});
+    if (file) {
+        return Optional{file};
+    } else {
+        std.debug.print("Template File {s} cannot be opened. Check the Path.\n", .{});
+        return Optional{};
+    }
+}
+
+pub fn ProcessInputArgs(args: [][]const u8) Optional(InputUnion) {
+    const argumentNumber = args.len;
+
+    for (args, 0..) |arg, i| {
+        if (i == 0) return null; //ignore the path to our own executable
+        if (std.mem.eql(u8, arg, "-idir") and argumentNumber > i) {
+            return Optional(InputUnion){InputFolder{ .Folder = args[i + 1] }};
+        }
+        if (std.mem.eql(u8, arg, "-ifile") and argumentNumber > i + 1) {
+            const file1 = TryOpenFileFromPath(args[i + 1]);
+            const file2 = TryOpenFileFromPath(args[i + 2]);
+
+            return OptionalFuncs.Zip(file1, file2)
+                .Bind(InputUnion, struct {
+                pub fn f(t: Tuple(std.fs.File, std.fs.File)) TemplateFile {
+                    return InputUnion{InputImages{ .Image1 = t.m1, .Image2 = t.m2 }};
+                }
+            }.f);
+        }
+        std.debug.print("{}: {s}\n", .{ i, arg });
+    }
+}
+
+pub fn ProcessOututArgs(args: [][]const u8) ?OutputFile {
+    const argumentNumber = args.len;
+
+    for (args, 0..) |arg, i| {
+        if (i == 0) return null; //ignore the path to our own executable
+        if (std.mem.eql(u8, arg, "-o") and argumentNumber > i) {
+            std.debug.print("{}: {s}\n", .{ i, arg });
+            return OutputFile{
+                .File = args[i + 1],
+            };
+        }
+    }
+}
+
+pub fn ProcessTemplateArgs(args: [][]const u8) Optional(TemplateFile) {
+    const argumentNumber = args.len;
+
+    for (args, 0..) |arg, i| {
+        if (i == 0) return null; //ignore the path to our own executable
+        if (std.mem.eql(u8, arg, "-t") and argumentNumber > i) {
+            std.debug.print("{}: {s}\n", .{ i, arg });
+
+            const potentialFilePath = args[i + 1];
+            return TryOpenFileFromPath(potentialFilePath)
+                .Bind(TemplateFile, struct {
+                pub fn f(file: std.fs.File) TemplateFile {
+                    return TemplateFile{ .file = file };
+                }
+            }.f);
+        }
+    }
+}
+
 pub fn IsValidFile(filename: []const u8) bool {
     const extensionFiler = [_][]const u8{ ".png", ".PNG" };
     for (extensionFiler) |extension| {
@@ -57,20 +151,15 @@ pub fn CreateHTMLPageWithImage(allocator: std.mem.Allocator, filePath: []const u
 pub fn main() !void {
     var general_purpose_allocator: std.heap.GeneralPurposeAllocator(.{}) = .init;
     const gpa = general_purpose_allocator.allocator();
-    const args = try std.process.argsAlloc(gpa);
+    const args = std.process.argsAlloc(gpa);
     defer std.process.argsFree(gpa, args);
 
-    var outputPath: []u8 = "";
-    var inputPath: []u8 = "";
-    for (args, 0..) |arg, i| {
-        if (i == 0) continue;
-        if (std.mem.eql(u8, arg, "-i") and args.len > i) {
-            inputPath = args[i + 1];
-        }
-        if (std.mem.eql(u8, arg, "-o") and args.len > i) {
-            outputPath = args[i + 1];
-        } //ignore the path to our own executable
-        std.debug.print("{}: {s}\n", .{ i, arg });
+    if (args) {
+        const input = ProcessInputArgs(args);
+        const output = ProcessOututArgs(args);
+        const template = ProcessTemplateArgs(args);
+    } else {
+        std.debug.print("No Valid Aruments provided\n");
     }
 
     const pngFiles = try FetchAllPNGFiles(gpa, inputPath);
@@ -81,8 +170,3 @@ pub fn main() !void {
         try CreateHTMLPageWithImage(gpa, outputPath, encodedImage);
     }
 }
-
-const std = @import("std");
-
-/// This imports the separate module containing `root.zig`. Take a look in `build.zig` for details.
-const lib = @import("ImageDiffer_lib");
