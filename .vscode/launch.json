@@ -5,8 +5,15 @@
             "type": "cppvsdbg",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/zig-out/bin/ImageDiffer",
+            "program": "${workspaceFolder}/zig-out/bin/IMGDI",
             "args": [
+                //"-ifile",
+                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\images\\A.png",
+                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\images\\B.png",
+                //"-o",
+                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\Test.html"
+                //"-to",
+                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\OutTemplates\\template.html"
             ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "zig build"

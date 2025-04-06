@@ -5,7 +5,7 @@ const OptionalFuncs = @import("optional");
 const Optional = @import("optional").Optional;
 const Tuple = @import("optional").Tuple;
 
-const baseTemplate = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>body{background-color:#343939;margin:0;height:100%}.wrapper{display:flex;top:50px;align-items:center;justify-content:center}.container{position:absolute;top:50px;border:5px solid #ffcb70;border-radius:2%;overflow:hidden}.sliderHandle{position:absolute;z-index:9;cursor:ew-resize;width:25px;height:25px;background-color:#ffcb70;border-radius:50%;opacity:.7}.sliderLine{position:absolute;z-index:8;cursor:ew-resize;width:3px;background-color:#ffcb70;opacity:.7}.img{position:absolute;width:auto;height:auto;overflow:hidden}.img img{display:block;vertical-align:middle}</style><script>var sliderHandle,sliderLine,overlayImage,container,x=0,i=0,clicked=0,w=0,h=0;function ToCssDimensionPx(e){return e+\"px\"}function SetupSlider(e,i){halfWidth=e/2,halfHeight=i/2,sliderHandle=document.getElementsByClassName(\"sliderHandle\")[0],(sliderLine=document.getElementsByClassName(\"sliderLine\")[0]).style.height=ToCssDimensionPx(i),sliderHandle.style.top=ToCssDimensionPx(halfHeight-sliderHandle.offsetHeight/2),sliderHandle.style.left=ToCssDimensionPx(halfWidth-sliderHandle.offsetWidth/2),sliderLine.style.top=ToCssDimensionPx(halfHeight-sliderLine.offsetHeight/2),sliderLine.style.left=ToCssDimensionPx(halfWidth-sliderLine.offsetWidth/2),sliderHandle.addEventListener(\"mousedown\",slideReady),sliderLine.addEventListener(\"mousedown\",slideReady),sliderHandle.addEventListener(\"touchstart\",slideReady),sliderLine.addEventListener(\"touchstart\",slideReady)}function SetupContainer(e,i){(container=document.getElementsByClassName(\"container\")[0]).style.width=ToCssDimensionPx(e),container.style.height=ToCssDimensionPx(i)}function slideReady(e){e.preventDefault(),clicked=1,window.addEventListener(\"mousemove\",slideMove),window.addEventListener(\"touchmove\",slideMove)}function slideFinish(){clicked=0}function slideMove(e){var i;if(0==clicked)return!1;(i=getCursorPos(e))<0&&(i=0),w<i&&(i=w),slide(i)}function getCursorPos(e){var i,n=0;return e=e.changedTouches?e.changedTouches[0]:e,i=overlayImage.getBoundingClientRect(),n=e.pageX-i.left,n-=window.pageXOffset}function slide(e){overlayImage.style.width=ToCssDimensionPx(e),sliderHandle.style.left=ToCssDimensionPx(overlayImage.offsetWidth-sliderHandle.offsetWidth/2),sliderLine.style.left=ToCssDimensionPx(overlayImage.offsetWidth-sliderLine.offsetWidth/2)}function Compare(){var e=document.getElementsByClassName(\"img\");for(i=0;i<e.length;i++)w=Math.max(w,e[i].clientWidth),h=Math.max(h,e[i].clientHeight);(overlayImage=document.getElementsByClassName(\"img-overlay\")[0]).style.width=ToCssDimensionPx(overlayImage.clientWidth),SetupContainer(w,h),SetupSlider(w,h),window.addEventListener(\"mouseup\",slideFinish),window.addEventListener(\"touchend\",slideFinish),slide(w/2)}window.onload=function(){Compare()}</script></head><body><div class=\"wrapper\"><div class=\"container\"><div class=\"img\"><img src=\"data:image/png;base64, <{img-left}>\"></div><div class=\"sliderLine\"></div><div class=\"sliderHandle\"></div><div class=\"img img-overlay\"><img src=\"data:image/png;base64, <{img-right}>\"></div></div></div></body></html>";
+const baseTemplate = "<!DOCTYPE html>\n<html>\n<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<style>\n\nbody {\n  background-color: rgb(52, 57, 57);\n  margin: 0px;\n  height: 100%;\n}\n.wrapper {\n  display: flex;\n  top: 50px;\n  align-items: center;\n  justify-content: center;\n}\n.container {\n  position: absolute;\n  top: 50px;\n  border: 5px solid #ffcb70;\n  border-radius: 2%;\n}\n\n.sliderHandle{\n  position: absolute;\n  z-index:9;\n  cursor: ew-resize;\n  width: 25px;\n  height: 25px;\n  background-color: #ffcb70;\n  border-radius: 50%;\n  opacity: 0.7;\n}\n\n.sliderLine {\n  position: absolute;\n  z-index:8;\n  cursor: ew-resize;\n  width: 3px;\n  background-color: #ffcb70;\n  opacity: 0.7;\n}\n\n.img {\n  position: absolute;\n  width: auto;\n  height: auto;\n  overflow:hidden;\n}\n\n.img .img-overlay{}\n\n.img img {\n  display:block;\n  vertical-align:middle;\n}\n\n</style>\n<script>\n\nvar x = 0, i =0;\nvar clicked = 0, w = 0, h = 0;\nvar sliderHandle, sliderLine, overlayImage, container;\n\nfunction ToCssDimensionPx(x) { return x + \"px\"; }\n\nfunction SetupSlider(w,h)\n{\n  \n  halfWidth = w/2;\n  halfHeight = h/2;\n  \n  /*create slider:*/\n  sliderHandle = document.getElementsByClassName(\"sliderHandle\")[0];\n  sliderLine = document.getElementsByClassName(\"sliderLine\")[0];\n\n  sliderLine.style.height =ToCssDimensionPx(h); \n\n  /*position the slider in the middle:*/\n  sliderHandle.style.top = ToCssDimensionPx(halfHeight - (sliderHandle.offsetHeight / 2));\n  sliderHandle.style.left = ToCssDimensionPx(halfWidth - (sliderHandle.offsetWidth / 2));\n\n  sliderLine.style.top = ToCssDimensionPx(halfHeight - (sliderLine.offsetHeight / 2));\n  sliderLine.style.left = ToCssDimensionPx(halfWidth - (sliderLine.offsetWidth / 2));\n\n  sliderHandle.addEventListener(\"mousedown\", slideReady);\n  sliderLine.addEventListener(\"mousedown\", slideReady);\n  sliderHandle.addEventListener(\"touchstart\", slideReady);\n  sliderLine.addEventListener(\"touchstart\", slideReady);\n}\n\nfunction SetupContainer(w, h)\n{\n  container = document.getElementsByClassName(\"container\")[0];\n  container.style.width = ToCssDimensionPx(w);\n  container.style.height = ToCssDimensionPx(h);\n}\n  \nfunction slideReady(e) {\n    /*prevent any other actions that may occur when moving over the image:*/\n    e.preventDefault();\n    /*the slider is now clicked and ready to move:*/\n    clicked = 1;\n    /*execute a function when the slider is moved:*/\n    window.addEventListener(\"mousemove\", slideMove);\n    window.addEventListener(\"touchmove\", slideMove);\n  }\n\n  function slideFinish() {\n    /*the slider is no longer clicked:*/\n    clicked = 0;\n  }\n\n  function slideMove(e) {\n    var pos;\n    /*if the slider is no longer clicked, exit this function:*/\n    if (clicked == 0) return false;\n    /*get the cursor's x position:*/\n    pos = getCursorPos(e)\n    /*prevent the slider from being positioned outside the image:*/\n    if (pos < 0) pos = 0;\n    if (pos > w) pos = w;\n    /*execute a function that will resize the overlay image according to the cursor:*/\n    slide(pos);\n  }\n\n  function getCursorPos(e) {\n    var a, x = 0;\n    e = (e.changedTouches) ? e.changedTouches[0] : e;\n    /*get the x positions of the image:*/\n    a = overlayImage.getBoundingClientRect();\n    /*calculate the cursor's x coordinate, relative to the image:*/\n    x = e.pageX - a.left;\n    /*consider any page scrolling:*/\n    x = x - window.pageXOffset;\n    return x;\n  }\n\n  function slide(x) {\n    overlayImage.style.width = ToCssDimensionPx(x);\n    sliderHandle.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderHandle.offsetWidth / 2));\n    sliderLine.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderLine.offsetWidth / 2));\n  }\n\n\nfunction Compare() {\n\n  var images = document.getElementsByClassName(\"img\");\n  for (i = 0; i < images.length; i++) {\n    w = Math.max(w,images[i].clientWidth);\n    h = Math.max(h,images[i].clientHeight);\n  };\n\n  overlayImage = document.getElementsByClassName(\"img-overlay\")[0];\n  overlayImage.style.width = ToCssDimensionPx(overlayImage.clientWidth);\n  \n  SetupContainer(w,h);\n  SetupSlider(w,h);\n\n  /*Window functions*/\n  window.addEventListener(\"mouseup\", slideFinish);\n  window.addEventListener(\"touchend\", slideFinish);\n\n  slide(w/2);\n}\n\n  window.onload = function() {\n    Compare();\n};\n</script>\n\n</script>\n</head>\n<body>\n<div class=\"wrapper\">\n  <div class=\"container\">\n    <div class=\"img\">\n      <img src=\"data:image/png;base64, <{img-left}>\">\n    </div>\n    <div class=\"sliderLine\"></div>\n    <div class=\"sliderHandle\"></div>\n    <div class=\"img img-overlay\">\n      <img src=\"data:image/png;base64, <{img-right}>\">\n    </div>\n  </div>\n</div>\n</body>\n</html>\n";
 const leftImageMarker = "<{img-left}>";
 const rightImageMarker = "<{img-right}>";
 
@@ -90,7 +90,7 @@ fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(Input
     return Optional(InputImages).None();
 }
 
-fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
+fn ProcessOutputArgs(args: [][:0]u8) Optional(OutputFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -107,7 +107,24 @@ fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
     return Optional(OutputFile).None();
 }
 
-const help = "IMGDI: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: outoutfile to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: otpional html template file to use, default will be used if none is provided";
+fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(OutputFile) {
+    const argumentNumber = args.len;
+
+    for (args, 0..) |arg, i| {
+        if (i == 0) continue; //ignore the path to our own executable
+        if (std.mem.eql(u8, arg, "-to") and argumentNumber > i) {
+            const potentialFilePath = args[i + 1];
+            if (IsPathFolderValid(potentialFilePath)) {
+                return Optional(OutputFile).Init(.{ .File = potentialFilePath });
+            } else {
+                return Optional(OutputFile).None();
+            }
+        }
+    }
+    return Optional(OutputFile).None();
+}
+
+const help = "IMGDI: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: output file to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: optional html template file to use, default will be used if none is provided\n  -to [filepath]: generates a template file from the basetemplate, this can be used to start creating your own templates. Cannot be used with other arguments";
 fn FindAndPrintHelp(args: [][:0]u8) bool {
     for (args, 0..) |arg, i| {
         if (i == 0) {
@@ -130,8 +147,6 @@ fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
     for (args, 0..) |arg, i| {
         if (i == 0) continue; //ignore the path to our own executable
         if (std.mem.eql(u8, arg, "-t") and argumentNumber > i) {
-            std.debug.print("{}: {s}\n", .{ i, arg });
-
             const potentialFilePath = args[i + 1];
             return TryOpenFileFromPath(potentialFilePath, .{})
                 .Bind(TemplateFile, struct {
@@ -206,8 +221,8 @@ fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const 
     return Encoder.encode(encodedFile, filecontent);
 }
 
-fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
-    const templateWithImg1 = try std.mem.replaceOwned(u8, allocator, baseTemplate, leftImageMarker, encodedImage1);
+fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, template: []const u8, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+    const templateWithImg1 = try std.mem.replaceOwned(u8, allocator, template, leftImageMarker, encodedImage1);
     const completedFile = try std.mem.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker, encodedImage2);
     if (TryCreateFileFromPath(outputfile.File).value) |file| {
         try file.writeAll(completedFile);
@@ -218,14 +233,18 @@ fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, encodedI
     }
 }
 
-fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
-    const fileContent = try std.fmt.allocPrint(allocator, "<html><body><img src=\"data:image/png;base64, {s}\"><img src=\"data:image/png;base64, {s}\"></body></html>", .{ encodedImage1, encodedImage2 });
+fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, template: std.fs.File, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+    const filesize = try template.getEndPos();
+    const templateContent = try template.readToEndAlloc(allocator, filesize);
+    try CreateHTMLPage(allocator, outputFile, templateContent, encodedImage1, encodedImage2);
+}
 
+fn GenerateTemplateFile(outputFile: OutputFile) !void {
     if (TryCreateFileFromPath(outputFile.File).value) |file| {
-        try file.writeAll(fileContent);
+        try file.writeAll(baseTemplate);
     } else {
         if (TryOpenFileFromPath(outputFile.File, .{}).value) |file| {
-            try file.writeAll(fileContent);
+            try file.writeAll(baseTemplate);
         }
     }
 }
@@ -242,19 +261,27 @@ pub fn main() !void {
     if (FindAndPrintHelp(args))
         return;
 
+    const templateOut = ProcessTemplatOutputArgs(args);
+    if (templateOut.value) |to| {
+        GenerateTemplateFile(to) catch {
+            std.debug.print("Could not write out Template to Location", .{});
+        };
+        return;
+    }
+
     const input = ProcessInputArgs(gpa, args);
-    const output = ProcessOututArgs(args);
+    const output = ProcessOutputArgs(args);
     const template = ProcessTemplateArgs(args);
     if (OptionalFuncs.Zip(InputImages, OutputFile, input, output).value) |requiredInputs| {
         const encodedImage1 = ConvertImageToBas64(gpa, requiredInputs.m1.Images[0]);
         const encodedImage2 = ConvertImageToBas64(gpa, requiredInputs.m1.Images[1]);
-        if (template.IsSet()) {
-            CreateHTMLPageFromTemplate(gpa, requiredInputs.m2, encodedImage1, encodedImage2) catch {
-                std.debug.print("Could not write to content to output File", .{});
+        if (template.value) |t| {
+            CreateHTMLPageFromTemplate(gpa, t.File, requiredInputs.m2, encodedImage1, encodedImage2) catch {
+                std.debug.print("Could not write content to output File", .{});
             };
         } else {
-            CreateHTMLPage(gpa, requiredInputs.m2, encodedImage1, encodedImage2) catch {
-                std.debug.print("Could not write to content to output File", .{});
+            CreateHTMLPage(gpa, requiredInputs.m2, baseTemplate, encodedImage1, encodedImage2) catch {
+                std.debug.print("Could not write content to output File", .{});
             };
         }
     }
