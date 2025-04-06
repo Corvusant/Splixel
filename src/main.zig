@@ -1,6 +1,4 @@
-//! By convention, main.zig is where your main function lives in the case that
-//! you are building an executable. If you are making a library, the convention
-//! is to delete this file and start with root.zig instead.
+// Copyright (c) 2025 Josua Kucher All rights reserved.
 
 const std = @import("std");
 const OptionalFuncs = @import("optional");
@@ -17,7 +15,7 @@ const OutputFile = struct {
     File: []const u8,
 };
 
-pub fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optional(std.fs.File) {
+fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optional(std.fs.File) {
     const file = std.fs.openFileAbsolute(path, flags) catch {
         std.debug.print("File {s} cannot be opened. Check the Path.\n", .{path});
         return Optional(std.fs.File).None();
@@ -26,7 +24,7 @@ pub fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optio
     return Optional(std.fs.File).Init(file);
 }
 
-pub fn TryCreateFileFromPath(path: []const u8) Optional(std.fs.File) {
+fn TryCreateFileFromPath(path: []const u8) Optional(std.fs.File) {
     const file = std.fs.createFileAbsolute(path, .{}) catch {
         std.debug.print("File {s} cannot be Created. Check the Path.\n", .{path});
         return Optional(std.fs.File).None();
@@ -35,21 +33,27 @@ pub fn TryCreateFileFromPath(path: []const u8) Optional(std.fs.File) {
     return Optional(std.fs.File).Init(file);
 }
 
-pub fn IsPathFolderValid(path: []const u8) bool {
+fn IsPathFolderValid(path: []const u8) bool {
     //Find the first / in the path
-    var sliceEndpoint = 0;
-    var i: usize = 0;
+    const localPath = path;
+    var sliceEndpoint: usize = 0;
+    var i: usize = localPath.len - 1;
     while (i > 0) : (i -= 1) {
-        if (path[i] == '/') {
+        const testChar = localPath[i];
+        if (testChar == '\\') {
             sliceEndpoint = i;
             break;
         }
     }
-    const folderpath = path[0..sliceEndpoint];
-    return if (std.fs.openDirAbsolute(folderpath, .{})) true else false;
+    const folderpath = localPath[0..sliceEndpoint];
+    var dir = std.fs.openDirAbsolute(folderpath, .{}) catch {
+        return false;
+    };
+    dir.close();
+    return true;
 }
 
-pub fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(InputImages) {
+fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(InputImages) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -82,15 +86,14 @@ pub fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(I
     return Optional(InputImages).None();
 }
 
-pub fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
+fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
         if (i == 0) continue; //ignore the path to our own executable
         if (std.mem.eql(u8, arg, "-o") and argumentNumber > i) {
-            std.debug.print("{}: {s}\n", .{ i, arg });
             const potentialFilePath = args[i + 1];
-            if (TryOpenFileFromPath(potentialFilePath, .{}).value) |_| {
+            if (IsPathFolderValid(potentialFilePath)) {
                 return Optional(OutputFile).Init(.{ .File = potentialFilePath });
             } else {
                 return Optional(OutputFile).None();
@@ -100,7 +103,7 @@ pub fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
     return Optional(OutputFile).None();
 }
 
-pub fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
+fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -120,7 +123,7 @@ pub fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
     return Optional(TemplateFile).None();
 }
 
-pub fn IsValidFile(filename: []const u8) bool {
+fn IsValidFile(filename: []const u8) bool {
     const extensionFiler = [_][]const u8{ ".png", ".PNG" };
     for (extensionFiler) |extension| {
         if (std.mem.count(u8, filename, extension) > 0)
@@ -129,7 +132,7 @@ pub fn IsValidFile(filename: []const u8) bool {
     return false;
 }
 
-pub fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.ArrayList(std.fs.File) {
+fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.ArrayList(std.fs.File) {
     var filePaths = std.ArrayList(std.fs.File).init(allocator);
     var dir = std.fs.cwd().openDir(folderPath, .{ .iterate = true }) catch {
         return filePaths;
@@ -166,7 +169,7 @@ pub fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) st
 }
 
 const Encoder = std.base64.standard.Encoder;
-pub fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const u8 {
+fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const u8 {
     const filesize = file.getEndPos() catch {
         return "";
     };
@@ -182,7 +185,7 @@ pub fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []co
     return Encoder.encode(encodedFile, filecontent);
 }
 
-pub fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
     const fileContent = try std.fmt.allocPrint(allocator, "<html><body><img src=\"data:image/png;base64, {s}\"><img src=\"data:image/png;base64, {s}\"></body></html>", .{ encodedImage1, encodedImage2 });
 
     if (TryCreateFileFromPath(outputfile.File).value) |file| {
@@ -194,7 +197,7 @@ pub fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, enco
     }
 }
 
-pub fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
     const fileContent = try std.fmt.allocPrint(allocator, "<html><body><img src=\"data:image/png;base64, {s}\"><img src=\"data:image/png;base64, {s}\"></body></html>", .{ encodedImage1, encodedImage2 });
 
     if (TryCreateFileFromPath(outputFile.File).value) |file| {
