@@ -103,6 +103,23 @@ fn ProcessOututArgs(args: [][:0]u8) Optional(OutputFile) {
     return Optional(OutputFile).None();
 }
 
+const help = "IMGDI: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: outoutfile to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: otpional html template file to use, default will be used if none is provided";
+fn FindAndPrintHelp(args: [][:0]u8) bool {
+    for (args, 0..) |arg, i| {
+        if (i == 0) {
+            if (args.len == 1 or args.len == 0) {
+                std.debug.print(help, .{});
+                return true;
+            }
+        } //ignore the path to our own executable
+        if (std.mem.eql(u8, arg, "-h") or std.mem.eql(u8, arg, "-help") or std.mem.eql(u8, arg, "-?") or std.mem.eql(u8, arg, "?")) {
+            std.debug.print(help, .{});
+            return true;
+        }
+    }
+    return false;
+}
+
 fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
     const argumentNumber = args.len;
 
@@ -217,6 +234,9 @@ pub fn main() !void {
         return {};
     };
     defer std.process.argsFree(gpa, args);
+
+    if (FindAndPrintHelp(args))
+        return;
 
     const input = ProcessInputArgs(gpa, args);
     const output = ProcessOututArgs(args);
