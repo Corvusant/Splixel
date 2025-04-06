@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+
+body {
+  background-color: rgb(52, 57, 57);
+  margin: 0px;
+  height: 100%;
+}
+.wrapper {
+  display: flex;
+  top: 50px;
+  align-items: center;
+  justify-content: center;
+}
+.container {
+  position: absolute;
+  top: 50px;
+  border: 5px solid #ffcb70;
+  border-radius: 2%;
+}
+
+.sliderHandle{
+  position: absolute;
+  z-index:9;
+  cursor: ew-resize;
+  width: 25px;
+  height: 25px;
+  background-color: #ffcb70;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.sliderLine {
+  position: absolute;
+  z-index:8;
+  cursor: ew-resize;
+  width: 3px;
+  background-color: #ffcb70;
+  opacity: 0.7;
+}
+
+.img {
+  position: absolute;
+  width: auto;
+  height: auto;
+  overflow:hidden;
+}
+
+.img .img-overlay{}
+
+.img img {
+  display:block;
+  vertical-align:middle;
+}
+
+</style>
+<script>
+
+var x = 0, i =0;
+var clicked = 0, w = 0, h = 0;
+var sliderHandle, sliderLine, overlayImage, container;
+
+function ToCssDimensionPx(x) { return x + "px"; }
+
+function SetupSlider(w,h)
+{
+  
+  halfWidth = w/2;
+  halfHeight = h/2;
+  
+  /*create slider:*/
+  sliderHandle = document.getElementsByClassName("sliderHandle")[0];
+  sliderLine = document.getElementsByClassName("sliderLine")[0];
+
+  sliderLine.style.height =ToCssDimensionPx(h); 
+
+  /*position the slider in the middle:*/
+  sliderHandle.style.top = ToCssDimensionPx(halfHeight - (sliderHandle.offsetHeight / 2));
+  sliderHandle.style.left = ToCssDimensionPx(halfWidth - (sliderHandle.offsetWidth / 2));
+
+  sliderLine.style.top = ToCssDimensionPx(halfHeight - (sliderLine.offsetHeight / 2));
+  sliderLine.style.left = ToCssDimensionPx(halfWidth - (sliderLine.offsetWidth / 2));
+
+  sliderHandle.addEventListener("mousedown", slideReady);
+  sliderLine.addEventListener("mousedown", slideReady);
+  sliderHandle.addEventListener("touchstart", slideReady);
+  sliderLine.addEventListener("touchstart", slideReady);
+}
+
+function SetupContainer(w, h)
+{
+  container = document.getElementsByClassName("container")[0];
+  container.style.width = ToCssDimensionPx(w);
+  container.style.height = ToCssDimensionPx(h);
+}
+  
+function slideReady(e) {
+    /*prevent any other actions that may occur when moving over the image:*/
+    e.preventDefault();
+    /*the slider is now clicked and ready to move:*/
+    clicked = 1;
+    /*execute a function when the slider is moved:*/
+    window.addEventListener("mousemove", slideMove);
+    window.addEventListener("touchmove", slideMove);
+  }
+
+  function slideFinish() {
+    /*the slider is no longer clicked:*/
+    clicked = 0;
+  }
+
+  function slideMove(e) {
+    var pos;
+    /*if the slider is no longer clicked, exit this function:*/
+    if (clicked == 0) return false;
+    /*get the cursor's x position:*/
+    pos = getCursorPos(e)
+    /*prevent the slider from being positioned outside the image:*/
+    if (pos < 0) pos = 0;
+    if (pos > w) pos = w;
+    /*execute a function that will resize the overlay image according to the cursor:*/
+    slide(pos);
+  }
+
+  function getCursorPos(e) {
+    var a, x = 0;
+    e = (e.changedTouches) ? e.changedTouches[0] : e;
+    /*get the x positions of the image:*/
+    a = overlayImage.getBoundingClientRect();
+    /*calculate the cursor's x coordinate, relative to the image:*/
+    x = e.pageX - a.left;
+    /*consider any page scrolling:*/
+    x = x - window.pageXOffset;
+    return x;
+  }
+
+  function slide(x) {
+    overlayImage.style.width = ToCssDimensionPx(x);
+    sliderHandle.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderHandle.offsetWidth / 2));
+    sliderLine.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderLine.offsetWidth / 2));
+  }
+
+
+function Compare() {
+
+  var images = document.getElementsByClassName("img");
+  for (i = 0; i < images.length; i++) {
+    w = Math.max(w,images[i].clientWidth);
+    h = Math.max(h,images[i].clientHeight);
+  };
+
+  overlayImage = document.getElementsByClassName("img-overlay")[0];
+  overlayImage.style.width = ToCssDimensionPx(overlayImage.clientWidth);
+  
+  SetupContainer(w,h);
+  SetupSlider(w,h);
+
+  /*Window functions*/
+  window.addEventListener("mouseup", slideFinish);
+  window.addEventListener("touchend", slideFinish);
+
+  slide(w/2);
+}
+
+  window.onload = function() {
+    Compare();
+};
+</script>
+
+</script>
+</head>
+<body>
+<div class="wrapper">
+  <div class="container">
+    <div class="img">
+      <img src="data:image/png;base64, <{img-left}>">
+    </div>
+    <div class="sliderLine"></div>
+    <div class="sliderHandle"></div>
+    <div class="img img-overlay">
+      <img src="data:image/png;base64, <{img-right}>">
+    </div>
+  </div>
+</div>
+</body>
+</html>

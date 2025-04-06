@@ -5,6 +5,10 @@ const OptionalFuncs = @import("optional");
 const Optional = @import("optional").Optional;
 const Tuple = @import("optional").Tuple;
 
+const baseTemplate = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>body{background-color:#343939;margin:0;height:100%}.wrapper{display:flex;top:50px;align-items:center;justify-content:center}.container{position:absolute;top:50px;border:5px solid #ffcb70;border-radius:2%;overflow:hidden}.sliderHandle{position:absolute;z-index:9;cursor:ew-resize;width:25px;height:25px;background-color:#ffcb70;border-radius:50%;opacity:.7}.sliderLine{position:absolute;z-index:8;cursor:ew-resize;width:3px;background-color:#ffcb70;opacity:.7}.img{position:absolute;width:auto;height:auto;overflow:hidden}.img img{display:block;vertical-align:middle}</style><script>var sliderHandle,sliderLine,overlayImage,container,x=0,i=0,clicked=0,w=0,h=0;function ToCssDimensionPx(e){return e+\"px\"}function SetupSlider(e,i){halfWidth=e/2,halfHeight=i/2,sliderHandle=document.getElementsByClassName(\"sliderHandle\")[0],(sliderLine=document.getElementsByClassName(\"sliderLine\")[0]).style.height=ToCssDimensionPx(i),sliderHandle.style.top=ToCssDimensionPx(halfHeight-sliderHandle.offsetHeight/2),sliderHandle.style.left=ToCssDimensionPx(halfWidth-sliderHandle.offsetWidth/2),sliderLine.style.top=ToCssDimensionPx(halfHeight-sliderLine.offsetHeight/2),sliderLine.style.left=ToCssDimensionPx(halfWidth-sliderLine.offsetWidth/2),sliderHandle.addEventListener(\"mousedown\",slideReady),sliderLine.addEventListener(\"mousedown\",slideReady),sliderHandle.addEventListener(\"touchstart\",slideReady),sliderLine.addEventListener(\"touchstart\",slideReady)}function SetupContainer(e,i){(container=document.getElementsByClassName(\"container\")[0]).style.width=ToCssDimensionPx(e),container.style.height=ToCssDimensionPx(i)}function slideReady(e){e.preventDefault(),clicked=1,window.addEventListener(\"mousemove\",slideMove),window.addEventListener(\"touchmove\",slideMove)}function slideFinish(){clicked=0}function slideMove(e){var i;if(0==clicked)return!1;(i=getCursorPos(e))<0&&(i=0),w<i&&(i=w),slide(i)}function getCursorPos(e){var i,n=0;return e=e.changedTouches?e.changedTouches[0]:e,i=overlayImage.getBoundingClientRect(),n=e.pageX-i.left,n-=window.pageXOffset}function slide(e){overlayImage.style.width=ToCssDimensionPx(e),sliderHandle.style.left=ToCssDimensionPx(overlayImage.offsetWidth-sliderHandle.offsetWidth/2),sliderLine.style.left=ToCssDimensionPx(overlayImage.offsetWidth-sliderLine.offsetWidth/2)}function Compare(){var e=document.getElementsByClassName(\"img\");for(i=0;i<e.length;i++)w=Math.max(w,e[i].clientWidth),h=Math.max(h,e[i].clientHeight);(overlayImage=document.getElementsByClassName(\"img-overlay\")[0]).style.width=ToCssDimensionPx(overlayImage.clientWidth),SetupContainer(w,h),SetupSlider(w,h),window.addEventListener(\"mouseup\",slideFinish),window.addEventListener(\"touchend\",slideFinish),slide(w/2)}window.onload=function(){Compare()}</script></head><body><div class=\"wrapper\"><div class=\"container\"><div class=\"img\"><img src=\"data:image/png;base64, <{img-left}>\"></div><div class=\"sliderLine\"></div><div class=\"sliderHandle\"></div><div class=\"img img-overlay\"><img src=\"data:image/png;base64, <{img-right}>\"></div></div></div></body></html>";
+const leftImageMarker = "<{img-left}>";
+const rightImageMarker = "<{img-right}>";
+
 const InputImages = struct { Images: [2]std.fs.File };
 
 const TemplateFile = struct {
@@ -203,13 +207,13 @@ fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const 
 }
 
 fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
-    const fileContent = try std.fmt.allocPrint(allocator, "<html><body><img src=\"data:image/png;base64, {s}\"><img src=\"data:image/png;base64, {s}\"></body></html>", .{ encodedImage1, encodedImage2 });
-
+    const templateWithImg1 = try std.mem.replaceOwned(u8, allocator, baseTemplate, leftImageMarker, encodedImage1);
+    const completedFile = try std.mem.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker, encodedImage2);
     if (TryCreateFileFromPath(outputfile.File).value) |file| {
-        try file.writeAll(fileContent);
+        try file.writeAll(completedFile);
     } else {
         if (TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
-            try file.writeAll(fileContent);
+            try file.writeAll(completedFile);
         }
     }
 }
