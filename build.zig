@@ -1,4 +1,13 @@
 const std = @import("std");
+const Step = std.Build.Step;
+const skylake = std.Target.x86.cpu.skylake;
+
+const release_targets: []const std.Target.Query = &.{
+    .{ .cpu_arch = .x86_64, .os_tag = .windows, .abi = .gnu, .cpu_model = std.Target.Query.CpuModel{ .explicit = &skylake } },
+    .{ .cpu_arch = .aarch64, .os_tag = .windows, .abi = .gnu },
+    .{ .cpu_arch = .x86_64, .os_tag = .linux, .abi = .gnu, .cpu_model = std.Target.Query.CpuModel{ .explicit = &skylake } },
+    .{ .cpu_arch = .aarch64, .os_tag = .linux, .abi = .gnu },
+};
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -8,7 +17,11 @@ pub fn build(b: *std.Build) void {
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
     // for restricting supported target set are available.
-    const target = b.standardTargetOptions(.{});
+
+    var target_platform: std.Build.ResolvedTarget = b.standardTargetOptions(.{});
+    for (release_targets) |trgt| {
+        target_platform = b.resolveTargetQuery(trgt);
+    }
 
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
@@ -24,7 +37,7 @@ pub fn build(b: *std.Build) void {
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = b.path("src/optional.zig"),
-        .target = target,
+        .target = target_platform,
         .optimize = optimize,
     });
 
@@ -35,7 +48,7 @@ pub fn build(b: *std.Build) void {
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = b.path("src/main.zig"),
-        .target = target,
+        .target = target_platform,
         .optimize = optimize,
     });
 
@@ -57,11 +70,10 @@ pub fn build(b: *std.Build) void {
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
     b.installArtifact(lib);
-
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
     const version = std.SemanticVersion{ .major = 1, .minor = 0, .patch = 0 };
-    const exe = b.addExecutable(.{ .name = "IMGDI", .root_module = exe_mod, .version = version });
+    const exe = b.addExecutable(.{ .name = "Splixel", .root_module = exe_mod, .version = version });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
@@ -90,25 +102,4 @@ pub fn build(b: *std.Build) void {
     // This will evaluate the `run` step rather than the default, which is "install".
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
-
-    // Creates a step for unit testing. This only builds the test executable
-    // but does not run it.
-    const lib_unit_tests = b.addTest(.{
-        .root_module = lib_mod,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
-        .root_module = exe_mod,
-    });
-
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
-    // Similar to creating the run step earlier, this exposes a `test` step to
-    // the `zig build --help` menu, providing a way for the user to request
-    // running the unit tests.
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_exe_unit_tests.step);
 }
