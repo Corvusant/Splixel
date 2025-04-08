@@ -124,7 +124,7 @@ fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(OutputFile) {
     return Optional(OutputFile).None();
 }
 
-const help = "IMGDI: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: output file to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: optional html template file to use, default will be used if none is provided\n  -to [filepath]: generates a template file from the basetemplate, this can be used to start creating your own templates. Cannot be used with other arguments";
+const help = "Splixel: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: output file to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: optional html template file to use, default will be used if none is provided\n  -to [filepath]: generates a template file from the basetemplate, this can be used to start creating your own templates. Cannot be used with other arguments";
 fn FindAndPrintHelp(args: [][:0]u8) bool {
     for (args, 0..) |arg, i| {
         if (i == 0) {

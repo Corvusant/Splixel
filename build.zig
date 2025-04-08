@@ -19,9 +19,11 @@ pub fn build(b: *std.Build) void {
     // for restricting supported target set are available.
 
     var target_platform: std.Build.ResolvedTarget = b.standardTargetOptions(.{});
-    for (release_targets) |trgt| {
-        target_platform = b.resolveTargetQuery(trgt);
-    }
+    //for (release_targets) |trgt| {
+    //    target_platform = b.resolveTargetQuery(trgt);
+    //}
+
+    target_platform = b.resolveTargetQuery(.{ .cpu_arch = .x86_64, .os_tag = .windows, .abi = .gnu, .cpu_model = std.Target.Query.CpuModel{ .explicit = &skylake } });
 
     // Standard optimization options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
