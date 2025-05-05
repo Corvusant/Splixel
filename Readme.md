@@ -48,3 +48,8 @@ splixel -idir Path\to\folder -o path\to\outputfile\file.html -t path\to\template
 
 ### Example Results
 ![Example Page1](examples/Example.png)
+
+## Build from Source
+To build Splixle from source you need to first install zig: https://ziglang.org/learn/getting-started/
+
+Afterwards navigate to the checked out root folder and call `zig build` this will build an x64-Windows executable by default. You can update build.zig to create builds for other targets.
