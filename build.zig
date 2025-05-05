@@ -76,7 +76,7 @@ pub fn build(b: *std.Build) void {
     // rather than a static library.
     const version = std.SemanticVersion{ .major = 1, .minor = 0, .patch = 0 };
     const exe = b.addExecutable(.{ .name = "Splixel", .root_module = exe_mod, .version = version });
-
+    exe.addWin32ResourceFile(.{ .file = b.path("Resources/splixel.rc") });
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

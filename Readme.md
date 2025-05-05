@@ -1,4 +1,5 @@
-# Splixel
+# <figure style="text-align: center;"><img src="Resources/Splixel.png" alt="Splixel Logo."><figcaption style="text-align: center;">Splixel</figcaption></figure>
+
 Splixel is a small CLI tool which allows creation of an image diff using base64 encoded images in and html page. The main use is convenient sharing of diffs using a single file, allowing for direct comparison.
 
 ## Installation
