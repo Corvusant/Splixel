@@ -254,13 +254,15 @@ pub fn main() !void {
     var timer = perf.StarTimer("Main");
     defer perf.StopTimer(&timer);
 
-    var general_purpose_allocator: std.heap.GeneralPurposeAllocator(.{}) = .init;
-    const gpa = general_purpose_allocator.allocator();
-    const args = std.process.argsAlloc(gpa) catch {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const args = std.process.argsAlloc(allocator) catch {
         std.debug.print("No Valid Aruments provided\n", .{});
         return {};
     };
-    defer std.process.argsFree(gpa, args);
+    defer std.process.argsFree(allocator, args);
 
     if (FindAndPrintHelp(args))
         return;
@@ -273,18 +275,18 @@ pub fn main() !void {
         return;
     }
 
-    const input = ProcessInputArgs(gpa, args);
+    const input = ProcessInputArgs(allocator, args);
     const output = ProcessOutputArgs(args);
     const template = ProcessTemplateArgs(args);
     if (OptionalFuncs.Zip(InputImages, OutputFile, input, output).value) |requiredInputs| {
-        const encodedImage1 = ConvertImageToBas64(gpa, requiredInputs.m1.Images[0]);
-        const encodedImage2 = ConvertImageToBas64(gpa, requiredInputs.m1.Images[1]);
+        const encodedImage1 = ConvertImageToBas64(allocator, requiredInputs.m1.Images[0]);
+        const encodedImage2 = ConvertImageToBas64(allocator, requiredInputs.m1.Images[1]);
         if (template.value) |t| {
-            CreateHTMLPageFromTemplate(gpa, t.File, requiredInputs.m2, encodedImage1, encodedImage2) catch {
+            CreateHTMLPageFromTemplate(allocator, t.File, requiredInputs.m2, encodedImage1, encodedImage2) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         } else {
-            CreateHTMLPage(gpa, requiredInputs.m2, baseTemplate, encodedImage1, encodedImage2) catch {
+            CreateHTMLPage(allocator, requiredInputs.m2, baseTemplate, encodedImage1, encodedImage2) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         }
