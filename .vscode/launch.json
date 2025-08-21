@@ -16,7 +16,7 @@
                 //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\OutTemplates\\template.html"
             ],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "zig build"
+            "preLaunchTask": "build"
         },
     ]
 }

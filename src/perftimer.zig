@@ -5,7 +5,7 @@ const PerfTimer = struct {
     timer: std.time.Timer,
 };
 
-pub fn StarTimer(name: []const u8) PerfTimer {
+pub fn StartTimer(name: []const u8) PerfTimer {
     const timer = std.time.Timer.start() catch {
         return .{ .name = name, .timer = undefined };
     };

@@ -23,6 +23,10 @@ pub fn build(b: *std.Build) void {
     //    target_platform = b.resolveTargetQuery(trgt);
     //}
 
+    const enableProfiling = b.option(bool, "profiling", "Enable profiling") orelse false;
+    const options = b.addOptions();
+    options.addOption(bool, "profiling", enableProfiling);
+
     target_platform = b.resolveTargetQuery(.{ .cpu_arch = .x86_64, .os_tag = .windows, .abi = .gnu, .cpu_model = std.Target.Query.CpuModel{ .explicit = &skylake } });
 
     // Standard optimization options allow the person running `zig build` to select
@@ -54,6 +58,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    exe_mod.addOptions("config", options);
     // Modules can depend on one another using the `std.Build.Module.addImport` function.
     // This is what allows Zig source code to use `@import("foo")` where 'foo' is not a
     // file path. In this case, we set up `exe_mod` to import `lib_mod`.
