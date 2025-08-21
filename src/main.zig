@@ -21,6 +21,8 @@ const OutputFile = struct {
 };
 
 fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optional(std.fs.File) {
+    var timer = perf.StarTimer("TryOpenFileFromPath");
+    defer perf.StopTimer(&timer);
     const file = std.fs.openFileAbsolute(path, flags) catch {
         std.debug.print("File {s} cannot be opened. Check the Path.\n", .{path});
         return Optional(std.fs.File).None();
@@ -30,6 +32,8 @@ fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optional(
 }
 
 fn TryCreateFileFromPath(path: []const u8) Optional(std.fs.File) {
+    var timer = perf.StarTimer("TryCreateFileFromPath");
+    defer perf.StopTimer(&timer);
     const file = std.fs.createFileAbsolute(path, .{}) catch {
         std.debug.print("File {s} cannot be Created. Check the Path.\n", .{path});
         return Optional(std.fs.File).None();
@@ -205,8 +209,8 @@ fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.Ar
     return filePaths;
 }
 
-const Encoder = std.base64.standard.Encoder;
-fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const u8 {
+fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File, fileBuf: []u8) []const u8 {
+    const Encoder = std.base64.standard.Encoder;
     const filesize = file.getEndPos() catch {
         return "";
     };
@@ -214,17 +218,31 @@ fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File) []const 
     const filecontent = file.readToEndAlloc(allocator, filesize) catch {
         return "";
     };
-    const encodedLength = Encoder.calcSize(filesize);
-    const encodedFile = allocator.alloc(u8, encodedLength) catch {
-        return "";
+
+    return Encoder.encode(fileBuf, filecontent);
+}
+
+fn GetEncodedImageSize(file: std.fs.File) usize {
+    const Encoder = std.base64.standard.Encoder;
+    const filesize = file.getEndPos() catch {
+        return 0;
     };
 
-    return Encoder.encode(encodedFile, filecontent);
+    return Encoder.calcSize(filesize);
 }
 
 fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, template: []const u8, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+    var timer = perf.StarTimer("CreateHTMLPageFromTemplate");
+    defer perf.StopTimer(&timer);
+
+    var timer2 = perf.StarTimer("ReplaceLeftImageMarker");
     const templateWithImg1 = try std.mem.replaceOwned(u8, allocator, template, leftImageMarker, encodedImage1);
+    perf.StopTimer(&timer2);
+
+    var timer3 = perf.StarTimer("ReplaceRightImageMarker");
     const completedFile = try std.mem.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker, encodedImage2);
+    perf.StopTimer(&timer3);
+
     if (TryCreateFileFromPath(outputfile.File).value) |file| {
         try file.writeAll(completedFile);
     } else {
@@ -235,12 +253,18 @@ fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, template
 }
 
 fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, template: std.fs.File, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
+    var timer = perf.StarTimer("CreateHTMLPageFromTemplate");
+    defer perf.StopTimer(&timer);
+
     const filesize = try template.getEndPos();
     const templateContent = try template.readToEndAlloc(allocator, filesize);
     try CreateHTMLPage(allocator, outputFile, templateContent, encodedImage1, encodedImage2);
 }
 
 fn GenerateTemplateFile(outputFile: OutputFile) !void {
+    var timer = perf.StarTimer("CreateHTMLPageFromTemplate");
+    defer perf.StopTimer(&timer);
+
     if (TryCreateFileFromPath(outputFile.File).value) |file| {
         try file.writeAll(baseTemplate);
     } else {
@@ -248,6 +272,27 @@ fn GenerateTemplateFile(outputFile: OutputFile) !void {
             try file.writeAll(baseTemplate);
         }
     }
+}
+
+const ThreadContext = struct { buff: []u8, file: std.fs.File, out: []const u8, threadIdx: u8 };
+
+fn worker(ctx: *ThreadContext) void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const timerName = std.fmt.allocPrint(
+        allocator,
+        "Encode {}",
+        .{ctx.threadIdx},
+    ) catch {
+        return;
+    };
+
+    var timer = perf.StarTimer(timerName);
+    defer perf.StopTimer(&timer);
+
+    ctx.out = ConvertImageToBas64(allocator, ctx.file, ctx.buff);
 }
 
 pub fn main() !void {
@@ -279,14 +324,34 @@ pub fn main() !void {
     const output = ProcessOutputArgs(args);
     const template = ProcessTemplateArgs(args);
     if (OptionalFuncs.Zip(InputImages, OutputFile, input, output).value) |requiredInputs| {
-        const encodedImage1 = ConvertImageToBas64(allocator, requiredInputs.m1.Images[0]);
-        const encodedImage2 = ConvertImageToBas64(allocator, requiredInputs.m1.Images[1]);
+        const filebuff = try allocator.alloc(u8, GetEncodedImageSize(requiredInputs.m1.Images[0]));
+        const filebuff2 = try allocator.alloc(u8, GetEncodedImageSize(requiredInputs.m1.Images[1]));
+
+        var ctx1 = ThreadContext{
+            .buff = filebuff,
+            .file = requiredInputs.m1.Images[0],
+            .out = undefined,
+            .threadIdx = 0,
+        };
+        var t1 = try std.Thread.spawn(.{}, worker, .{&ctx1});
+
+        var ctx2 = ThreadContext{
+            .buff = filebuff2,
+            .file = requiredInputs.m1.Images[1],
+            .out = undefined,
+            .threadIdx = 1,
+        };
+        var t2 = try std.Thread.spawn(.{}, worker, .{&ctx2});
+
+        t1.join();
+        t2.join();
+
         if (template.value) |t| {
-            CreateHTMLPageFromTemplate(allocator, t.File, requiredInputs.m2, encodedImage1, encodedImage2) catch {
+            CreateHTMLPageFromTemplate(allocator, t.File, requiredInputs.m2, ctx1.out, ctx2.out) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         } else {
-            CreateHTMLPage(allocator, requiredInputs.m2, baseTemplate, encodedImage1, encodedImage2) catch {
+            CreateHTMLPage(allocator, requiredInputs.m2, baseTemplate, ctx1.out, ctx2.out) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         }

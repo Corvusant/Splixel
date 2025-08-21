@@ -16,5 +16,5 @@ pub fn StarTimer(name: []const u8) PerfTimer {
 pub fn StopTimer(timer: *PerfTimer) void {
     const nanoSeconds = timer.timer.lap();
     const milliSeconds = @as(f64, @floatFromInt(nanoSeconds)) / 1e6;
-    std.debug.print("\n{s}: {d:.3}\n", .{ timer.name, milliSeconds });
+    std.debug.print("{s}: {d:.3}\n", .{ timer.name, milliSeconds });
 }

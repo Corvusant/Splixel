@@ -7,11 +7,11 @@
             "name": "Debug",
             "program": "${workspaceFolder}/zig-out/bin/Splixel",
             "args": [
-                //"-ifile",
-                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\images\\A.png",
-                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\images\\B.png",
-                //"-o",
-                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\Test.html"
+                "-ifile",
+                "C:\\Projects\\ImageDiffer\\bench\\Example.png",
+                "C:\\Projects\\ImageDiffer\\bench\\Example2.png",
+                "-o",
+                "C:\\Projects\\ImageDiffer\\zig-out\\bin\\Test.html",
                 //"-to",
                 //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\OutTemplates\\template.html"
             ],
