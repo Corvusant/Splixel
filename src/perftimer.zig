@@ -1,3 +1,5 @@
+// Copyright (c) 2025 Josua Kucher All rights reserved.
+
 const std = @import("std");
 
 const PerfTimer = struct {

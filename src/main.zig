@@ -1,11 +1,18 @@
 // Copyright (c) 2025 Josua Kucher All rights reserved.
 
-const std = @import("std");
-const OptionalFuncs = @import("optional");
-const Optional = @import("optional").Optional;
-const Tuple = @import("optional").Tuple;
-const perf = @import("perftimer.zig");
+//Compiletime Flags
 const config = @import("config");
+
+//std
+const std = @import("std");
+
+const OptionalFuncs = @import("optional.zig");
+const Optional = @import("optional.zig").Optional;
+const Tuple = @import("optional.zig").Tuple;
+const perf = @import("perftimer.zig");
+const replacement = @import("helpers.zig");
+const fileUtils = @import("fileUtils.zig");
+const encoding = @import("imageEncoding.zig");
 
 const baseTemplate = "<!DOCTYPE html>\n<html>\n<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<style>\n\nbody {\n  background-color: rgb(52, 57, 57);\n  margin: 0px;\n  height: 100%;\n}\n.wrapper {\n  display: flex;\n  top: 50px;\n  align-items: center;\n  justify-content: center;\n}\n.container {\n  position: absolute;\n  top: 50px;\n  border: 5px solid #ffcb70;\n  border-radius: 2%;\n  overflow: hidden;\n}\n\n.sliderHandle{\n  position: absolute;\n  z-index:9;\n  cursor: ew-resize;\n  width: 25px;\n  height: 25px;\n  background-color: #ffcb70;\n  border-radius: 50%;\n  opacity: 0.7;\n}\n\n.sliderLine {\n  position: absolute;\n  z-index:8;\n  cursor: ew-resize;\n  width: 3px;\n  background-color: #ffcb70;\n  opacity: 0.7;\n}\n\n.img {\n  position: absolute;\n  width: auto;\n  height: auto;\n  overflow:hidden;\n}\n\n.img .img-overlay{}\n\n.img img {\n  display:block;\n  vertical-align:middle;\n}\n\n</style>\n<script>\n\nvar x = 0, i =0;\nvar clicked = 0, w = 0, h = 0;\nvar sliderHandle, sliderLine, overlayImage, container;\n\nfunction ToCssDimensionPx(x) { return x + \"px\"; }\n\nfunction SetupSlider(w,h)\n{\n  \n  halfWidth = w/2;\n  halfHeight = h/2;\n  \n  /*create slider:*/\n  sliderHandle = document.getElementsByClassName(\"sliderHandle\")[0];\n  sliderLine = document.getElementsByClassName(\"sliderLine\")[0];\n\n  sliderLine.style.height =ToCssDimensionPx(h); \n\n  /*position the slider in the middle:*/\n  sliderHandle.style.top = ToCssDimensionPx(halfHeight - (sliderHandle.offsetHeight / 2));\n  sliderHandle.style.left = ToCssDimensionPx(halfWidth - (sliderHandle.offsetWidth / 2));\n\n  sliderLine.style.top = ToCssDimensionPx(halfHeight - (sliderLine.offsetHeight / 2));\n  sliderLine.style.left = ToCssDimensionPx(halfWidth - (sliderLine.offsetWidth / 2));\n\n  sliderHandle.addEventListener(\"mousedown\", slideReady);\n  sliderLine.addEventListener(\"mousedown\", slideReady);\n  sliderHandle.addEventListener(\"touchstart\", slideReady);\n  sliderLine.addEventListener(\"touchstart\", slideReady);\n}\n\nfunction SetupContainer(w, h)\n{\n  container = document.getElementsByClassName(\"container\")[0];\n  container.style.width = ToCssDimensionPx(w);\n  container.style.height = ToCssDimensionPx(h);\n}\n  \nfunction slideReady(e) {\n    /*prevent any other actions that may occur when moving over the image:*/\n    e.preventDefault();\n    /*the slider is now clicked and ready to move:*/\n    clicked = 1;\n    /*execute a function when the slider is moved:*/\n    window.addEventListener(\"mousemove\", slideMove);\n    window.addEventListener(\"touchmove\", slideMove);\n  }\n\n  function slideFinish() {\n    /*the slider is no longer clicked:*/\n    clicked = 0;\n  }\n\n  function slideMove(e) {\n    var pos;\n    /*if the slider is no longer clicked, exit this function:*/\n    if (clicked == 0) return false;\n    /*get the cursor's x position:*/\n    pos = getCursorPos(e)\n    /*prevent the slider from being positioned outside the image:*/\n    if (pos < 0) pos = 0;\n    if (pos > w) pos = w;\n    /*execute a function that will resize the overlay image according to the cursor:*/\n    slide(pos);\n  }\n\n  function getCursorPos(e) {\n    var a, x = 0;\n    e = (e.changedTouches) ? e.changedTouches[0] : e;\n    /*get the x positions of the image:*/\n    a = overlayImage.getBoundingClientRect();\n    /*calculate the cursor's x coordinate, relative to the image:*/\n    x = e.pageX - a.left;\n    /*consider any page scrolling:*/\n    x = x - window.pageXOffset;\n    return x;\n  }\n\n  function slide(x) {\n    overlayImage.style.width = ToCssDimensionPx(x);\n    sliderHandle.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderHandle.offsetWidth / 2));\n    sliderLine.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderLine.offsetWidth / 2));\n  }\n\n\nfunction Compare() {\n\n  var images = document.getElementsByClassName(\"img\");\n  for (i = 0; i < images.length; i++) {\n    w = Math.max(w,images[i].clientWidth);\n    h = Math.max(h,images[i].clientHeight);\n  };\n\n  overlayImage = document.getElementsByClassName(\"img-overlay\")[0];\n  overlayImage.style.width = ToCssDimensionPx(overlayImage.clientWidth);\n  \n  SetupContainer(w,h);\n  SetupSlider(w,h);\n\n  /*Window functions*/\n  window.addEventListener(\"mouseup\", slideFinish);\n  window.addEventListener(\"touchend\", slideFinish);\n\n  slide(w/2);\n}\n\n  window.onload = function() {\n    Compare();\n};\n</script>\n\n</script>\n</head>\n<body>\n<div class=\"wrapper\">\n  <div class=\"container\">\n    <div class=\"img\">\n      <img src=\"data:image/png;base64, <{img-left}>\">\n    </div>\n    <div class=\"sliderLine\"></div>\n    <div class=\"sliderHandle\"></div>\n    <div class=\"img img-overlay\">\n      <img src=\"data:image/png;base64, <{img-right}>\">\n    </div>\n  </div>\n</div>\n</body>\n</html>\n";
 const leftImageMarker = "<{img-left}>";
@@ -20,50 +27,6 @@ const TemplateFile = struct {
 const OutputFile = struct {
     File: []const u8,
 };
-
-fn TryOpenFileFromPath(path: []const u8, flags: std.fs.File.OpenFlags) Optional(std.fs.File) {
-    var timer = if (comptime config.profiling) perf.StartTimer("TryOpenFileFromPath");
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    const file = std.fs.openFileAbsolute(path, flags) catch {
-        std.debug.print("File {s} cannot be opened. Check the Path.\n", .{path});
-        return Optional(std.fs.File).None();
-    };
-
-    return Optional(std.fs.File).Init(file);
-}
-
-fn TryCreateFileFromPath(path: []const u8) Optional(std.fs.File) {
-    var timer = if (comptime config.profiling) perf.StartTimer("TryCreateFileFromPath");
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    const file = std.fs.createFileAbsolute(path, .{}) catch {
-        std.debug.print("File {s} cannot be Created. Check the Path.\n", .{path});
-        return Optional(std.fs.File).None();
-    };
-
-    return Optional(std.fs.File).Init(file);
-}
-
-fn IsPathFolderValid(path: []const u8) bool {
-    //Find the first / in the path
-    const localPath = path;
-    var sliceEndpoint: usize = 0;
-    var i: usize = localPath.len - 1;
-    while (i > 0) : (i -= 1) {
-        const testChar = localPath[i];
-        if (testChar == '\\') {
-            sliceEndpoint = i;
-            break;
-        }
-    }
-    const folderpath = localPath[0..sliceEndpoint];
-    var dir = std.fs.openDirAbsolute(folderpath, .{}) catch {
-        return false;
-    };
-    dir.close();
-    return true;
-}
 
 fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(InputImages) {
     const argumentNumber = args.len;
@@ -84,8 +47,8 @@ fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(Input
             return Optional(InputImages).Init(.{ .Images = [2]std.fs.File{ pngFiles.items[0], pngFiles.items[1] } });
         }
         if (std.mem.eql(u8, arg, "-ifile") and argumentNumber > i + 1) {
-            const file1 = TryOpenFileFromPath(args[i + 1], .{});
-            const file2 = TryOpenFileFromPath(args[i + 2], .{});
+            const file1 = fileUtils.TryOpenFileFromPath(args[i + 1], .{});
+            const file2 = fileUtils.TryOpenFileFromPath(args[i + 2], .{});
 
             return OptionalFuncs.Zip(std.fs.File, std.fs.File, file1, file2)
                 .Bind(InputImages, struct {
@@ -105,7 +68,7 @@ fn ProcessOutputArgs(args: [][:0]u8) Optional(OutputFile) {
         if (i == 0) continue; //ignore the path to our own executable
         if (std.mem.eql(u8, arg, "-o") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
-            if (IsPathFolderValid(potentialFilePath)) {
+            if (fileUtils.IsPathFolderValid(potentialFilePath)) {
                 return Optional(OutputFile).Init(.{ .File = potentialFilePath });
             } else {
                 return Optional(OutputFile).None();
@@ -122,7 +85,7 @@ fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(OutputFile) {
         if (i == 0) continue; //ignore the path to our own executable
         if (std.mem.eql(u8, arg, "-to") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
-            if (IsPathFolderValid(potentialFilePath)) {
+            if (fileUtils.IsPathFolderValid(potentialFilePath)) {
                 return Optional(OutputFile).Init(.{ .File = potentialFilePath });
             } else {
                 return Optional(OutputFile).None();
@@ -156,7 +119,7 @@ fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
         if (i == 0) continue; //ignore the path to our own executable
         if (std.mem.eql(u8, arg, "-t") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
-            return TryOpenFileFromPath(potentialFilePath, .{})
+            return fileUtils.TryOpenFileFromPath(potentialFilePath, .{})
                 .Bind(TemplateFile, struct {
                 pub fn f(file: std.fs.File) TemplateFile {
                     return TemplateFile{ .File = file };
@@ -165,15 +128,6 @@ fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
         }
     }
     return Optional(TemplateFile).None();
-}
-
-fn IsValidFile(filename: []const u8) bool {
-    const extensionFiler = [_][]const u8{ ".png", ".PNG" };
-    for (extensionFiler) |extension| {
-        if (std.mem.count(u8, filename, extension) > 0)
-            return true;
-    }
-    return false;
 }
 
 fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.ArrayList(std.fs.File) {
@@ -194,7 +148,8 @@ fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.Ar
         if (item.kind != .file)
             continue;
 
-        if (!IsValidFile(item.path))
+        var extensions = [_][]const u8{ ".png", ".PNG" };
+        if (!fileUtils.IsValidFile(item.path, &extensions))
             continue;
 
         const pathName = dir.realpathAlloc(allocator, "") catch {
@@ -203,7 +158,7 @@ fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.Ar
         const fullImagePath = std.fmt.allocPrint(allocator, "{s}\\{s}", .{ pathName, item.path }) catch {
             return filePaths;
         };
-        if (TryOpenFileFromPath(fullImagePath, .{}).value) |f| {
+        if (fileUtils.TryOpenFileFromPath(fullImagePath, .{}).value) |f| {
             filePaths.append(f) catch {
                 std.debug.print("Could not add files to process", .{});
             };
@@ -211,40 +166,20 @@ fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.Ar
     }
     return filePaths;
 }
-
-fn ConvertImageToBas64(allocator: std.mem.Allocator, file: std.fs.File, fileBuf: []u8) []const u8 {
-    const Encoder = std.base64.standard.Encoder;
-    const filesize = file.getEndPos() catch {
-        return "";
-    };
-
-    const filecontent = file.readToEndAlloc(allocator, filesize) catch {
-        return "";
-    };
-
-    return Encoder.encode(fileBuf, filecontent);
-}
-
-fn GetEncodedImageSize(file: std.fs.File) usize {
-    const Encoder = std.base64.standard.Encoder;
-    const filesize = file.getEndPos() catch {
-        return 0;
-    };
-
-    return Encoder.calcSize(filesize);
-}
-
 fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, template: []const u8, encodedImage1: []const u8, encodedImage2: []const u8) !void {
     var timer = if (comptime config.profiling) perf.StartTimer("CreateHTMLPageFromTemplate");
     defer if (comptime config.profiling) perf.StopTimer(&timer);
 
-    const templateWithImg1 = try std.mem.replaceOwned(u8, allocator, template, leftImageMarker, encodedImage1);
-    const completedFile = try std.mem.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker, encodedImage2);
+    const leftImgReplacementInfo = replacement.gatherReplacementAccelerationData(u8, template, leftImageMarker, encodedImage1, 0);
+    const templateWithImg1 = try replacement.replaceOwned(u8, allocator, template, leftImageMarker.len, encodedImage1, leftImgReplacementInfo.replacementLocation, leftImgReplacementInfo.size);
 
-    if (TryCreateFileFromPath(outputfile.File).value) |file| {
+    const rightImgReplacementInfo = replacement.gatherReplacementAccelerationData(u8, templateWithImg1, rightImageMarker, encodedImage2, leftImgReplacementInfo.replacementLocation + encodedImage1.len);
+    const completedFile = try replacement.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker.len, encodedImage2, rightImgReplacementInfo.replacementLocation, rightImgReplacementInfo.size);
+
+    if (fileUtils.TryCreateFileFromPath(outputfile.File).value) |file| {
         try file.writeAll(completedFile);
     } else {
-        if (TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
+        if (fileUtils.TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
             try file.writeAll(completedFile);
         }
     }
@@ -263,10 +198,10 @@ fn GenerateTemplateFile(outputFile: OutputFile) !void {
     var timer = if (comptime config.profiling) perf.StartTimer("CreateHTMLPageFromTemplate");
     defer if (comptime config.profiling) perf.StopTimer(&timer);
 
-    if (TryCreateFileFromPath(outputFile.File).value) |file| {
+    if (fileUtils.TryCreateFileFromPath(outputFile.File).value) |file| {
         try file.writeAll(baseTemplate);
     } else {
-        if (TryOpenFileFromPath(outputFile.File, .{}).value) |file| {
+        if (fileUtils.TryOpenFileFromPath(outputFile.File, .{}).value) |file| {
             try file.writeAll(baseTemplate);
         }
     }
@@ -290,7 +225,7 @@ fn worker(ctx: *ThreadContext) void {
     var timer = if (comptime config.profiling) perf.StartTimer(timerName);
     defer if (comptime config.profiling) perf.StopTimer(&timer);
 
-    ctx.out = ConvertImageToBas64(allocator, ctx.file, ctx.buff);
+    ctx.out = encoding.ConvertImageToBas64(allocator, ctx.file, ctx.buff);
 }
 
 pub fn main() !void {
@@ -322,8 +257,8 @@ pub fn main() !void {
     const output = ProcessOutputArgs(args);
     const template = ProcessTemplateArgs(args);
     if (OptionalFuncs.Zip(InputImages, OutputFile, input, output).value) |requiredInputs| {
-        const filebuff = try allocator.alloc(u8, GetEncodedImageSize(requiredInputs.m1.Images[0]));
-        const filebuff2 = try allocator.alloc(u8, GetEncodedImageSize(requiredInputs.m1.Images[1]));
+        const filebuff = try allocator.alloc(u8, encoding.GetEncodedImageSize(requiredInputs.m1.Images[0]));
+        const filebuff2 = try allocator.alloc(u8, encoding.GetEncodedImageSize(requiredInputs.m1.Images[1]));
 
         var ctx1 = ThreadContext{
             .buff = filebuff,

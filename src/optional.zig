@@ -1,3 +1,7 @@
+// Copyright (c) 2025 Josua Kucher All rights reserved.
+
+const std = @import("std");
+
 pub fn Optional(comptime Domain: type) type {
     return struct {
         value: ?Domain,
