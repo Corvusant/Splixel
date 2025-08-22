@@ -8,15 +8,15 @@
             "program": "${workspaceFolder}/zig-out/bin/Splixel",
             "args": [
                 "-ifile",
-                "C:\\Projects\\ImageDiffer\\bench\\Example.png",
-                "C:\\Projects\\ImageDiffer\\bench\\Example2.png",
+                "${workspaceFolder}\\bench\\Example.png",
+                "${workspaceFolder}\\bench\\Example2.png",
                 "-o",
-                "C:\\Projects\\ImageDiffer\\zig-out\\bin\\Test.html",
+                "${workspaceFolder}\\zig-out\\bin\\Test.html",
                 //"-to",
-                //"C:\\Projects\\ImageDiffer\\zig-out\\bin\\OutTemplates\\template.html"
+                //"${workspaceFolder}\\zig-out\\bin\\OutTemplates\\template.html"
             ],
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "build"
+            "preLaunchTask": "build profiling"
         },
     ]
 }
