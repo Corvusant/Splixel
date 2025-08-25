@@ -10,26 +10,13 @@ const OptionalFuncs = @import("optional.zig");
 const Optional = @import("optional.zig").Optional;
 const Tuple = @import("optional.zig").Tuple;
 const perf = @import("perftimer.zig");
-const replacement = @import("helpers.zig");
 const fileUtils = @import("fileUtils.zig");
+const threading = @import("threadWorker.zig");
 const encoding = @import("imageEncoding.zig");
-const rle = @import("rle.zig");
+const filetypes = @import("types.zig");
+const siteGeneration = @import("websitegeneration.zig");
 
-const baseTemplate = "<!DOCTYPE html>\n<html>\n<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<style>\n\nbody {\n  background-color: rgb(52, 57, 57);\n  margin: 0px;\n  height: 100%;\n}\n.wrapper {\n  display: flex;\n  top: 50px;\n  align-items: center;\n  justify-content: center;\n}\n.container {\n  position: absolute;\n  top: 50px;\n  border: 5px solid #ffcb70;\n  border-radius: 2%;\n  overflow: hidden;\n}\n\n.sliderHandle{\n  position: absolute;\n  z-index:9;\n  cursor: ew-resize;\n  width: 25px;\n  height: 25px;\n  background-color: #ffcb70;\n  border-radius: 50%;\n  opacity: 0.7;\n}\n\n.sliderLine {\n  position: absolute;\n  z-index:8;\n  cursor: ew-resize;\n  width: 3px;\n  background-color: #ffcb70;\n  opacity: 0.7;\n}\n\n.img {\n  position: absolute;\n  width: auto;\n  height: auto;\n  overflow:hidden;\n}\n\n.img .img-overlay{}\n\n.img img {\n  display:block;\n  vertical-align:middle;\n}\n\n</style>\n<script>\n\nvar x = 0, i =0;\nvar clicked = 0, w = 0, h = 0;\nvar sliderHandle, sliderLine, overlayImage, container;\n\nfunction ToCssDimensionPx(x) { return x + \"px\"; }\n\nfunction SetupSlider(w,h)\n{\n  \n  halfWidth = w/2;\n  halfHeight = h/2;\n  \n  /*create slider:*/\n  sliderHandle = document.getElementsByClassName(\"sliderHandle\")[0];\n  sliderLine = document.getElementsByClassName(\"sliderLine\")[0];\n\n  sliderLine.style.height =ToCssDimensionPx(h); \n\n  /*position the slider in the middle:*/\n  sliderHandle.style.top = ToCssDimensionPx(halfHeight - (sliderHandle.offsetHeight / 2));\n  sliderHandle.style.left = ToCssDimensionPx(halfWidth - (sliderHandle.offsetWidth / 2));\n\n  sliderLine.style.top = ToCssDimensionPx(halfHeight - (sliderLine.offsetHeight / 2));\n  sliderLine.style.left = ToCssDimensionPx(halfWidth - (sliderLine.offsetWidth / 2));\n\n  sliderHandle.addEventListener(\"mousedown\", slideReady);\n  sliderLine.addEventListener(\"mousedown\", slideReady);\n  sliderHandle.addEventListener(\"touchstart\", slideReady);\n  sliderLine.addEventListener(\"touchstart\", slideReady);\n}\n\nfunction SetupContainer(w, h)\n{\n  container = document.getElementsByClassName(\"container\")[0];\n  container.style.width = ToCssDimensionPx(w);\n  container.style.height = ToCssDimensionPx(h);\n}\n  \nfunction slideReady(e) {\n    /*prevent any other actions that may occur when moving over the image:*/\n    e.preventDefault();\n    /*the slider is now clicked and ready to move:*/\n    clicked = 1;\n    /*execute a function when the slider is moved:*/\n    window.addEventListener(\"mousemove\", slideMove);\n    window.addEventListener(\"touchmove\", slideMove);\n  }\n\n  function slideFinish() {\n    /*the slider is no longer clicked:*/\n    clicked = 0;\n  }\n\n  function slideMove(e) {\n    var pos;\n    /*if the slider is no longer clicked, exit this function:*/\n    if (clicked == 0) return false;\n    /*get the cursor's x position:*/\n    pos = getCursorPos(e)\n    /*prevent the slider from being positioned outside the image:*/\n    if (pos < 0) pos = 0;\n    if (pos > w) pos = w;\n    /*execute a function that will resize the overlay image according to the cursor:*/\n    slide(pos);\n  }\n\n  function getCursorPos(e) {\n    var a, x = 0;\n    e = (e.changedTouches) ? e.changedTouches[0] : e;\n    /*get the x positions of the image:*/\n    a = overlayImage.getBoundingClientRect();\n    /*calculate the cursor's x coordinate, relative to the image:*/\n    x = e.pageX - a.left;\n    /*consider any page scrolling:*/\n    x = x - window.pageXOffset;\n    return x;\n  }\n\n  function slide(x) {\n    overlayImage.style.width = ToCssDimensionPx(x);\n    sliderHandle.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderHandle.offsetWidth / 2));\n    sliderLine.style.left = ToCssDimensionPx(overlayImage.offsetWidth - (sliderLine.offsetWidth / 2));\n  }\n\n\nfunction Compare() {\n\n  var images = document.getElementsByClassName(\"img\");\n  for (i = 0; i < images.length; i++) {\n    w = Math.max(w,images[i].clientWidth);\n    h = Math.max(h,images[i].clientHeight);\n  };\n\n  overlayImage = document.getElementsByClassName(\"img-overlay\")[0];\n  overlayImage.style.width = ToCssDimensionPx(overlayImage.clientWidth);\n  \n  SetupContainer(w,h);\n  SetupSlider(w,h);\n\n  /*Window functions*/\n  window.addEventListener(\"mouseup\", slideFinish);\n  window.addEventListener(\"touchend\", slideFinish);\n\n  slide(w/2);\n}\n\n  window.onload = function() {\n    Compare();\n};\n</script>\n\n</script>\n</head>\n<body>\n<div class=\"wrapper\">\n  <div class=\"container\">\n    <div class=\"img\">\n      <img src=\"data:image/png;base64, <{img-left}>\">\n    </div>\n    <div class=\"sliderLine\"></div>\n    <div class=\"sliderHandle\"></div>\n    <div class=\"img img-overlay\">\n      <img src=\"data:image/png;base64, <{img-right}>\">\n    </div>\n  </div>\n</div>\n</body>\n</html>\n";
-const leftImageMarker = "<{img-left}>";
-const rightImageMarker = "<{img-right}>";
-
-const InputImages = struct { Images: [2]std.fs.File };
-
-const TemplateFile = struct {
-    File: std.fs.File,
-};
-
-const OutputFile = struct {
-    File: []const u8,
-};
-
-fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(InputImages) {
+fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(filetypes.InputFiles) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -39,30 +26,30 @@ fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(Input
 
             if (pngFiles.items.len < 2) {
                 std.debug.print("The provided Folder does not contain 2 Images to Diff\n", .{});
-                return Optional(InputImages).None();
+                return Optional(filetypes.InputFiles).None();
             }
 
             if (pngFiles.items.len > 2) {
                 std.debug.print("The providerd folder contains more than 2 .png images. The first two will be used\n", .{});
             }
-            return Optional(InputImages).Init(.{ .Images = [2]std.fs.File{ pngFiles.items[0], pngFiles.items[1] } });
+            return Optional(filetypes.InputFiles).Init(.{ .Images = [2]std.fs.File{ pngFiles.items[0], pngFiles.items[1] } });
         }
         if (std.mem.eql(u8, arg, "-ifile") and argumentNumber > i + 1) {
             const file1 = fileUtils.TryOpenFileFromPath(args[i + 1], .{});
             const file2 = fileUtils.TryOpenFileFromPath(args[i + 2], .{});
 
             return OptionalFuncs.Zip(std.fs.File, std.fs.File, file1, file2)
-                .Bind(InputImages, struct {
-                pub fn f(t: Tuple(std.fs.File, std.fs.File)) InputImages {
+                .Bind(filetypes.InputFiles, struct {
+                pub fn f(t: Tuple(std.fs.File, std.fs.File)) filetypes.InputFiles {
                     return .{ .Images = [2]std.fs.File{ t.m1, t.m2 } };
                 }
             }.f);
         }
     }
-    return Optional(InputImages).None();
+    return Optional(filetypes.InputFiles).None();
 }
 
-fn ProcessOutputArgs(args: [][:0]u8) Optional(OutputFile) {
+fn ProcessOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -70,16 +57,16 @@ fn ProcessOutputArgs(args: [][:0]u8) Optional(OutputFile) {
         if (std.mem.eql(u8, arg, "-o") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
             if (fileUtils.IsPathFolderValid(potentialFilePath)) {
-                return Optional(OutputFile).Init(.{ .File = potentialFilePath });
+                return Optional(filetypes.OutputFile).Init(.{ .File = potentialFilePath });
             } else {
-                return Optional(OutputFile).None();
+                return Optional(filetypes.OutputFile).None();
             }
         }
     }
-    return Optional(OutputFile).None();
+    return Optional(filetypes.OutputFile).None();
 }
 
-fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(OutputFile) {
+fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -87,13 +74,13 @@ fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(OutputFile) {
         if (std.mem.eql(u8, arg, "-to") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
             if (fileUtils.IsPathFolderValid(potentialFilePath)) {
-                return Optional(OutputFile).Init(.{ .File = potentialFilePath });
+                return Optional(filetypes.OutputFile).Init(.{ .File = potentialFilePath });
             } else {
-                return Optional(OutputFile).None();
+                return Optional(filetypes.OutputFile).None();
             }
         }
     }
-    return Optional(OutputFile).None();
+    return Optional(filetypes.OutputFile).None();
 }
 
 const help = "Splixel: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: output file to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: optional html template file to use, default will be used if none is provided\n  -to [filepath]: generates a template file from the basetemplate, this can be used to start creating your own templates. Cannot be used with other arguments";
@@ -113,7 +100,7 @@ fn FindAndPrintHelp(args: [][:0]u8) bool {
     return false;
 }
 
-fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
+fn ProcessTemplateArgs(args: [][:0]u8) Optional(filetypes.TemplateFile) {
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -121,14 +108,14 @@ fn ProcessTemplateArgs(args: [][:0]u8) Optional(TemplateFile) {
         if (std.mem.eql(u8, arg, "-t") and argumentNumber > i) {
             const potentialFilePath = args[i + 1];
             return fileUtils.TryOpenFileFromPath(potentialFilePath, .{})
-                .Bind(TemplateFile, struct {
-                pub fn f(file: std.fs.File) TemplateFile {
-                    return TemplateFile{ .File = file };
+                .Bind(filetypes.TemplateFile, struct {
+                pub fn f(file: std.fs.File) filetypes.TemplateFile {
+                    return filetypes.TemplateFile{ .File = file };
                 }
             }.f);
         }
     }
-    return Optional(TemplateFile).None();
+    return Optional(filetypes.TemplateFile).None();
 }
 
 fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.ArrayList(std.fs.File) {
@@ -167,67 +154,6 @@ fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.Ar
     }
     return filePaths;
 }
-fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: OutputFile, template: []const u8, encodedImage1: []const u8, encodedImage2: []const u8) !void {
-    var timer = if (comptime config.profiling) perf.StartTimer("CreateHTMLPageFromTemplate");
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    const leftImgReplacementInfo = replacement.gatherReplacementAccelerationData(u8, template, leftImageMarker, encodedImage1, 0);
-    const templateWithImg1 = try replacement.replaceOwned(u8, allocator, template, leftImageMarker.len, encodedImage1, leftImgReplacementInfo.replacementLocation, leftImgReplacementInfo.size);
-
-    const rightImgReplacementInfo = replacement.gatherReplacementAccelerationData(u8, templateWithImg1, rightImageMarker, encodedImage2, leftImgReplacementInfo.replacementLocation + encodedImage1.len);
-    const completedFile = try replacement.replaceOwned(u8, allocator, templateWithImg1, rightImageMarker.len, encodedImage2, rightImgReplacementInfo.replacementLocation, rightImgReplacementInfo.size);
-
-    if (fileUtils.TryCreateFileFromPath(outputfile.File).value) |file| {
-        try file.writeAll(completedFile);
-    } else {
-        if (fileUtils.TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
-            try file.writeAll(completedFile);
-        }
-    }
-}
-
-fn CreateHTMLPageFromTemplate(allocator: std.mem.Allocator, template: std.fs.File, outputFile: OutputFile, encodedImage1: []const u8, encodedImage2: []const u8) !void {
-    var timer = if (comptime config.profiling) perf.StartTimer("CreateHTMLPageFromTemplate");
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    const filesize = try template.getEndPos();
-    const templateContent = try template.readToEndAlloc(allocator, filesize);
-    try CreateHTMLPage(allocator, outputFile, templateContent, encodedImage1, encodedImage2);
-}
-
-fn GenerateTemplateFile(outputFile: OutputFile) !void {
-    var timer = if (comptime config.profiling) perf.StartTimer("CreateHTMLPageFromTemplate");
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    if (fileUtils.TryCreateFileFromPath(outputFile.File).value) |file| {
-        try file.writeAll(baseTemplate);
-    } else {
-        if (fileUtils.TryOpenFileFromPath(outputFile.File, .{}).value) |file| {
-            try file.writeAll(baseTemplate);
-        }
-    }
-}
-
-const ThreadContext = struct { buff: []u8, file: std.fs.File, out: []const u8, threadIdx: u8 };
-
-fn worker(ctx: *ThreadContext) void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const timerName = if (comptime config.profiling) std.fmt.allocPrint(
-        allocator,
-        "Encode {}",
-        .{ctx.threadIdx},
-    ) catch {
-        return;
-    };
-
-    var timer = if (comptime config.profiling) perf.StartTimer(timerName);
-    defer if (comptime config.profiling) perf.StopTimer(&timer);
-
-    ctx.out = encoding.ConvertImageToBas64(allocator, ctx.file, ctx.buff);
-}
 
 pub fn main() !void {
     var timer = if (comptime config.profiling) perf.StartTimer("main");
@@ -248,7 +174,7 @@ pub fn main() !void {
 
     const templateOut = ProcessTemplatOutputArgs(args);
     if (templateOut.value) |to| {
-        GenerateTemplateFile(to) catch {
+        siteGeneration.GenerateTemplateFile(to) catch {
             std.debug.print("Could not write out Template to Location", .{});
         };
         return;
@@ -257,35 +183,35 @@ pub fn main() !void {
     const input = ProcessInputArgs(allocator, args);
     const output = ProcessOutputArgs(args);
     const template = ProcessTemplateArgs(args);
-    if (OptionalFuncs.Zip(InputImages, OutputFile, input, output).value) |requiredInputs| {
+    if (OptionalFuncs.Zip(filetypes.InputFiles, filetypes.OutputFile, input, output).value) |requiredInputs| {
         const filebuff = try allocator.alloc(u8, encoding.GetEncodedImageSize(requiredInputs.m1.Images[0]));
         const filebuff2 = try allocator.alloc(u8, encoding.GetEncodedImageSize(requiredInputs.m1.Images[1]));
 
-        var ctx1 = ThreadContext{
+        var ctx1 = threading.ThreadContext{
             .buff = filebuff,
             .file = requiredInputs.m1.Images[0],
             .out = undefined,
             .threadIdx = 0,
         };
-        var t1 = try std.Thread.spawn(.{}, worker, .{&ctx1});
+        var t1 = try std.Thread.spawn(.{}, threading.worker, .{&ctx1});
 
-        var ctx2 = ThreadContext{
+        var ctx2 = threading.ThreadContext{
             .buff = filebuff2,
             .file = requiredInputs.m1.Images[1],
             .out = undefined,
             .threadIdx = 1,
         };
-        var t2 = try std.Thread.spawn(.{}, worker, .{&ctx2});
+        var t2 = try std.Thread.spawn(.{}, threading.worker, .{&ctx2});
 
         t1.join();
         t2.join();
 
         if (template.value) |t| {
-            CreateHTMLPageFromTemplate(allocator, t.File, requiredInputs.m2, ctx1.out, ctx2.out) catch {
+            siteGeneration.CreateHTMLPageFromTemplate(allocator, t.File, requiredInputs.m2, ctx1.out, ctx2.out) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         } else {
-            CreateHTMLPage(allocator, requiredInputs.m2, baseTemplate, ctx1.out, ctx2.out) catch {
+            siteGeneration.CreateHTMLPageFromIncludedTemplate(allocator, requiredInputs.m2, ctx1.out, ctx2.out) catch {
                 std.debug.print("Could not write content to output File", .{});
             };
         }

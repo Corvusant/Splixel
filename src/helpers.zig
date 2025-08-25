@@ -14,6 +14,7 @@ const ReplacementData = struct {
 pub fn gatherReplacementAccelerationData(comptime T: type, input: []const T, needle: []const T, replacement: []const T, offset: usize) ReplacementData {
     // Empty needle will loop forever.
     assert(needle.len > 0);
+    @setEvalBranchQuota(100000); // we set this high so we can parse moste base template files
 
     var i: usize = offset;
     var size: usize = input.len;
