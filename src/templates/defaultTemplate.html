@@ -63,6 +63,23 @@ var x = 0, i =0;
 var clicked = 0, w = 0, h = 0;
 var sliderHandle, sliderLine, overlayImage, container;
 
+function decodeRLE(input) {
+  if (input.length <= 0)
+    return "";
+
+  var decodedString = "";
+  for (i = 0; i < input.length; i += 2) { 
+    let count = input[i];
+    let character = input[i+1];
+
+    for (j = 0; j < count; j++) { 
+      decodedString = decodedString + character;
+    }
+  }
+  return decodedString;
+}
+
+
 function ToCssDimensionPx(x) { return x + "px"; }
 
 function SetupSlider(w,h)
