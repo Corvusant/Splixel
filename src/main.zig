@@ -17,6 +17,9 @@ const filetypes = @import("types.zig");
 const siteGeneration = @import("websitegeneration.zig");
 
 fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(filetypes.InputFiles) {
+    var timer = if (comptime config.profiling) perf.StartTimer("ProcessInputArgs");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
+
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -50,6 +53,9 @@ fn ProcessInputArgs(allocator: std.mem.Allocator, args: [][:0]u8) Optional(filet
 }
 
 fn ProcessOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
+    var timer = if (comptime config.profiling) perf.StartTimer("ProcessOutputArgs");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
+
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -67,6 +73,8 @@ fn ProcessOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
 }
 
 fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
+    var timer = if (comptime config.profiling) perf.StartTimer("ProcessTemplatOutputArgs");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -85,6 +93,9 @@ fn ProcessTemplatOutputArgs(args: [][:0]u8) Optional(filetypes.OutputFile) {
 
 const help = "Splixel: is a small utility for creating html pages with embedded 2 images conainting diffing functionality\n  -h|-help|-?|?: prints arguments and help\n  -idir [directory path]: input directory to fetch images from (cannot be used with -ifile)\n  -ifile [filepath] [filepath]: images to use (cannot be used with -idir)\n  -o [filepath]: output file to use (file will be created if it does not exist, missing directories will NOT be created)\n  -t [filepath]: optional html template file to use, default will be used if none is provided\n  -to [filepath]: generates a template file from the basetemplate, this can be used to start creating your own templates. Cannot be used with other arguments";
 fn FindAndPrintHelp(args: [][:0]u8) bool {
+    var timer = if (comptime config.profiling) perf.StartTimer("FindAndPrintHelp");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
+
     for (args, 0..) |arg, i| {
         if (i == 0) {
             if (args.len == 1 or args.len == 0) {
@@ -101,6 +112,9 @@ fn FindAndPrintHelp(args: [][:0]u8) bool {
 }
 
 fn ProcessTemplateArgs(args: [][:0]u8) Optional(filetypes.TemplateFile) {
+    var timer = if (comptime config.profiling) perf.StartTimer("ProcessTemplateArgs");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
+
     const argumentNumber = args.len;
 
     for (args, 0..) |arg, i| {
@@ -119,6 +133,9 @@ fn ProcessTemplateArgs(args: [][:0]u8) Optional(filetypes.TemplateFile) {
 }
 
 fn FetchAllPNGFiles(allocator: std.mem.Allocator, folderPath: []const u8) std.ArrayList(std.fs.File) {
+    var timer = if (comptime config.profiling) perf.StartTimer("FetchAllPNGFiles");
+    defer if (comptime config.profiling) perf.StopTimer(&timer);
+
     var filePaths: std.ArrayList(std.fs.File) = std.ArrayList(std.fs.File).init(allocator);
     var dir = std.fs.cwd().openDir(folderPath, .{ .iterate = true }) catch {
         return filePaths;

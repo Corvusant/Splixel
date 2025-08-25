@@ -63,11 +63,15 @@ pub fn CreateHTMLPage(allocator: std.mem.Allocator, outputfile: fileTypes.Output
         rightImgReplacementInfo.size,
     );
 
-    if (fileUtils.TryCreateFileFromPath(outputfile.File).value) |file| {
-        try file.writeAll(completedFile);
-    } else {
-        if (fileUtils.TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
+    {
+        var t = if (comptime config.profiling) perf.StartTimer("WriteHTMLFile");
+        defer if (comptime config.profiling) perf.StopTimer(&t);
+        if (fileUtils.TryCreateFileFromPath(outputfile.File).value) |file| {
             try file.writeAll(completedFile);
+        } else {
+            if (fileUtils.TryOpenFileFromPath(outputfile.File, .{}).value) |file| {
+                try file.writeAll(completedFile);
+            }
         }
     }
 }
